@@ -1,0 +1,36 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# Kotlin
+*.kotlin_module
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# Generated files
+dependency-reduced-pom.xml
+
+# Test / coverage
+coverage/
+jacoco.exec
+
+# JVM crash logs
+hs_err_pid*
