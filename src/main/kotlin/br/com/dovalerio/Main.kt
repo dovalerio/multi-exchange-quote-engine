@@ -3,10 +3,15 @@ package br.com.dovalerio
 import br.com.dovalerio.aggregator.QuoteAggregator
 import br.com.dovalerio.client.BinanceClient
 import br.com.dovalerio.client.MercadoBitcoinClient
+import br.com.dovalerio.model.CryptoPriceEvent
+import br.com.dovalerio.model.SpreadEvent
 import br.com.dovalerio.service.ArbitrageDetector
 import br.com.dovalerio.service.EngineService
 import br.com.dovalerio.service.QuoteService
 import br.com.dovalerio.service.SpreadService
+import java.time.Instant
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 fun main() {
 
@@ -16,7 +21,6 @@ fun main() {
     )
 
     val aggregator = QuoteAggregator(clients)
-
 
     val quoteService = QuoteService(
         aggregator = aggregator,
@@ -32,41 +36,69 @@ fun main() {
         arbitrageDetector = arbitrageDetector
     )
 
-    engineService.execute("BRL")
-        .onSuccess { report ->
+    val producer = KafkaCryptoProducer("localhost:9092")
 
-            println("======================================")
-            println("MULTI-EXCHANGE QUOTE ENGINE")
-            println("======================================")
+    val scheduler = Executors.newSingleThreadScheduledExecutor()
+    val virtualExecutor = Executors.newVirtualThreadPerTaskExecutor()
 
-            report.spreads.forEach { result ->
+    Runtime.getRuntime().addShutdownHook(Thread {
+        println("Encerrando aplicação...")
+        scheduler.shutdown()
+        virtualExecutor.shutdown()
+        producer.close()
+    })
 
-                println()
-                println("Pair: ${result.pair}")
-                println("----------------------------------")
+    scheduler.scheduleAtFixedRate({
 
-                println("Best BUY  : ${result.bestBuy.exchange} @ ${result.bestBuy.ask}")
-                println("Best SELL : ${result.bestSell.exchange} @ ${result.bestSell.bid}")
-                println("Spread    : ${result.spread}")
+        virtualExecutor.submit {
 
-                if (result.hasArbitrage) {
-                    println("⚡ Arbitrage opportunity detected")
+            val now = Instant.now()
+            println("Iniciando ciclo em $now")
+
+            engineService.execute("BRL")
+                .onSuccess { report ->
+
+                    report.spreads.forEach { result ->
+
+                        val timestamp = Instant.now().toEpochMilli()
+
+                        val buyEvent = CryptoPriceEvent(
+                            symbol = result.pair,
+                            exchange = result.bestBuy.exchange,
+                            price = result.bestBuy.ask,
+                            timestamp = timestamp
+                        )
+
+                        val sellEvent = CryptoPriceEvent(
+                            symbol = result.pair,
+                            exchange = result.bestSell.exchange,
+                            price = result.bestSell.bid,
+                            timestamp = timestamp
+                        )
+
+                        producer.sendCryptoPrice(buyEvent)
+                        producer.sendCryptoPrice(sellEvent)
+
+                        val spreadEvent = SpreadEvent(
+                            pair = result.pair,
+                            bestBuyExchange = result.bestBuy.exchange,
+                            bestBuyPrice = result.bestBuy.ask,
+                            bestSellExchange = result.bestSell.exchange,
+                            bestSellPrice = result.bestSell.bid,
+                            spread = result.spread,
+                            hasArbitrage = result.hasArbitrage,
+                            timestamp = timestamp
+                        )
+
+                        producer.sendSpread(spreadEvent)
+                    }
+
+                    println("Eventos publicados com sucesso.")
                 }
-            }
-
-            println()
-            println("======================================")
-            println("EXCHANGE METRICS")
-            println("======================================")
-
-            report.metrics.forEach { metric ->
-                println(
-                    "${metric.exchange} | success=${metric.successCount} | " +
-                            "failure=${metric.failureCount} | breaker=${metric.breakerState}"
-                )
-            }
+                .onFailure { error ->
+                    println("❌ Engine failed: ${error.message}")
+                }
         }
-        .onFailure { error ->
-            println("❌ Engine failed: ${error.message}")
-        }
+
+    }, 0, 60, TimeUnit.MINUTES)
 }

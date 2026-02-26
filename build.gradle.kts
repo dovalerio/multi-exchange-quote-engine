@@ -25,7 +25,8 @@ dependencies {
 
     // JSON
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-
+    implementation("org.apache.kafka:kafka-clients:3.7.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.0")
     // Logging
     implementation("ch.qos.logback:logback-classic:1.5.13")
 

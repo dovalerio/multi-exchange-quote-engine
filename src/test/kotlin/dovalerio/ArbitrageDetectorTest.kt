@@ -30,6 +30,14 @@ class ArbitrageDetectorTest {
         assertFalse(detector.detect(spreadResult))
     }
 
+    @Test
+    fun `should not detect arbitrage when spread is zero`() {
+
+        val spreadResult = mockSpread("0.00")
+
+        assertFalse(detector.detect(spreadResult))
+    }
+
     private fun mockSpread(value: String): SpreadResult {
         val pair = CurrencyPair(CryptoAsset.BTC, "BRL")
 
