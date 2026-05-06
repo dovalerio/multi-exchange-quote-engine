@@ -25,9 +25,8 @@ The goal of this project is to demonstrate high concurrency with a simple and re
 Main
 → QuoteAggregator
 → ExchangeClient (interface)
-→ FoxbitClient
 → BinanceClient
-→ KrakenClient
+→ MercadoBitcoinClient
 
 ````
 
@@ -66,12 +65,11 @@ Each provider implements the same contract, enabling extension without modifying
 ```
 BTC/BRL
 ---------------------------------
-Foxbit   bid=302000 ask=302500
-Binance  bid=301800 ask=302200
-Kraken   bid=302100 ask=302700
+Binance         bid=301800 ask=302200
+MercadoBitcoin  bid=302000 ask=302500
 
 Best BUY : Binance
-Best SELL: Kraken
+Best SELL: MercadoBitcoin
 
 Completed in 143 ms
 ```
