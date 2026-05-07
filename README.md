@@ -1,5 +1,8 @@
 # multi-exchange-quote-engine
-# multi-exchange-quote-engine
+
+![CI](https://github.com/dovalerio/multi-exchange-quote-engine/actions/workflows/ci.yml/badge.svg)
+![Java](https://img.shields.io/badge/Java-25-blue)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.2.20-purple)
 
 Console application written in Kotlin running on Java 25 to aggregate cryptocurrency prices from multiple exchanges using Virtual Threads (Project Loom).
 
